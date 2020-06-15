@@ -13,6 +13,9 @@ def add_file():
 
 def del_file():
     """delete file from list"""
+    if len(list_file.curselection()) == 0:
+        msgbox.showwarning("경고", "삭제할 pdf 파일을 선택해주세요!")
+        return
     for index in reversed(list_file.curselection()):
         list_file.delete(index)
 
@@ -31,13 +34,14 @@ def _rotate_pdf_files():
     pdf_files = [pdf_file for pdf_file in list_file.get(0, tk.END)]
     
 
-def start():
+def rotate_file():
+    """rotate"""
     if list_file.size() == 0:
-        msgbox.showwarning("경고", "pdf 파일을 추가해주세요")
+        msgbox.showwarning("경고", "pdf 파일을 추가해주세요!")
         return
     
     if len(entry_dest_path.get()) == 0:
-        msgbox.showwarning("경고", "저장 경로를 선택하세요")
+        msgbox.showwarning("경고", "저장 경로를 선택하세요!")
         return
 
     _rotate_pdf_files()
@@ -102,7 +106,7 @@ progress_bar.pack(fill="x", padx=5, pady=5)
 frame_run = tk.Frame(root)
 frame_run.pack(fill="x", padx=5, pady=5)
 
-btn_start = tk.Button(frame_run, padx=5, pady=5, text="시작", width=12, command=start)
+btn_start = tk.Button(frame_run, padx=5, pady=5, text="회전", width=8, command=rotate_file)
 btn_start.pack(padx=5, pady=5)
 
 # root.resizable(False, False)
