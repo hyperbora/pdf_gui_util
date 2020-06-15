@@ -27,6 +27,10 @@ def browse_dest_path():
     entry_dest_path.configure(state='disabled')
 
 
+def _rotate_pdf_files():
+    pdf_files = [pdf_file for pdf_file in list_file.get(0, tk.END)]
+    
+
 def start():
     if list_file.size() == 0:
         msgbox.showwarning("경고", "pdf 파일을 추가해주세요")
@@ -36,6 +40,7 @@ def start():
         msgbox.showwarning("경고", "저장 경로를 선택하세요")
         return
 
+    _rotate_pdf_files()
 
 root = tk.Tk()
 root.title("pdf util")
