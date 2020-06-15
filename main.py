@@ -5,6 +5,8 @@ import tkinter.messagebox as msgbox
 import PyPDF2
 import os
 import time
+import subprocess
+import platform
 
 
 def add_file():
@@ -34,6 +36,15 @@ def browse_dest_path():
     entry_dest_path.delete(0, tk.END)
     entry_dest_path.insert(0, folder_selected)
     entry_dest_path.configure(state='disabled')
+
+
+def _open_file(path):
+    if platform.system() == "Windows":
+        os.startfile(path)
+    elif platform.system() == "Darwin":
+        subprocess.Popen(["open", path])
+    else:
+        subprocess.Popen(["xdg-open", path])
 
 
 def _rotated_pdf(filepath, angle, dest):
@@ -67,6 +78,8 @@ def _rotate_pdf_files(angle, dest):
         msgbox.showerror("오류", e)
     else:
         msgbox.showinfo("알림", "작업이 완료되었습니다!")
+        if chkvar_open_result.get() == 1:
+            _open_file(dest)
 
 
 def rotate_file():
@@ -135,6 +148,11 @@ cmb_rotate = ttk.Combobox(
     frame_option, state="readonly", values=opt_rotate, width=5)
 cmb_rotate.current(0)
 cmb_rotate.pack(side="left", padx=5, pady=5)
+
+chkvar_open_result = tk.IntVar(value=1)
+cb_open_result = tk.Checkbutton(
+    frame_option, text="완료 후 폴더 열기", variable=chkvar_open_result)
+cb_open_result.pack(side="left", padx=5, pady=5)
 
 # 진행 상황
 frame_progress = tk.LabelFrame(root, text="진행상황")
