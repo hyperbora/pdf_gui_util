@@ -1,6 +1,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import filedialog
+import tkinter.messagebox as msgbox
 
 def add_file():
     """find files and attach to list"""
@@ -27,7 +28,14 @@ def browse_dest_path():
 
 
 def start():
-    pass
+    if list_file.size() == 0:
+        msgbox.showwarning("경고", "pdf 파일을 추가해주세요")
+        return
+    
+    if len(entry_dest_path.get()) == 0:
+        msgbox.showwarning("경고", "저장 경로를 선택하세요")
+        return
+
 
 root = tk.Tk()
 root.title("pdf util")
