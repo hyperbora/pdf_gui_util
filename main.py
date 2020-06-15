@@ -1,14 +1,30 @@
 import tkinter as tk
 import tkinter.ttk as ttk
+from tkinter import filedialog
 
 def add_file():
-    pass
+    """find files and attach to list"""
+    files = filedialog.askopenfilenames(title="pdf 파일을 선택하세요", filetypes=(("pdf 파일", "*.pdf"), ("모든 파일", "*.*")),
+    initialdir=r"")
+
+    for file in files:
+        list_file.insert(tk.END, file)
 
 def del_file():
-    pass
+    """delete file from list"""
+    for index in reversed(list_file.curselection()):
+        list_file.delete(index)
 
 def browse_dest_path():
-    pass
+    """set location for rotated pdf files"""
+    folder_selected = filedialog.askdirectory()
+    if folder_selected == '':
+        return
+    entry_dest_path.configure(state='normal')
+    entry_dest_path.delete(0, tk.END)
+    entry_dest_path.insert(0, folder_selected)
+    entry_dest_path.configure(state='disabled')
+
 
 def start():
     pass
@@ -43,7 +59,7 @@ scrollbar.config(command=list_file.yview)
 frame_path = tk.LabelFrame(root, text="저장경로")
 frame_path.pack(fill="x", padx=5, pady=5, ipady=5)
 
-entry_dest_path = tk.Entry(frame_path)
+entry_dest_path = tk.Entry(frame_path, state='disabled')
 entry_dest_path.pack(side="left", fill="x", expand=True, padx=5, pady=5, ipady=4)
 
 btn_dest_path = tk.Button(frame_path, text="찾아보기", width=10, command=browse_dest_path)
@@ -76,5 +92,5 @@ frame_run.pack(fill="x", padx=5, pady=5)
 btn_start = tk.Button(frame_run, padx=5, pady=5, text="시작", width=12, command=start)
 btn_start.pack(padx=5, pady=5)
 
-root.resizable(False, False)
+# root.resizable(False, False)
 root.mainloop()
