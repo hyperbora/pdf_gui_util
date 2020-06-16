@@ -14,7 +14,7 @@ def add_file():
     files = filedialog.askopenfilenames(title="pdf 파일을 선택하세요", filetypes=(("pdf 파일", "*.pdf"), ("모든 파일", "*.*")),
                                         initialdir=r"")
 
-    for file in files:
+    for file in sorted(files):
         list_file.insert(tk.END, file)
 
 
@@ -38,6 +38,30 @@ def browse_dest_path():
     entry_dest_path.configure(state='disabled')
 
 
+def handle_exception(f):
+    def wrapper(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            msgbox.showerror("오류", e)
+            p_var.set(0)
+            progress_bar.update()
+    return wrapper
+
+
+def handle_validation(f):
+    def wrapper(*args, **kwargs):
+        if list_file.size() == 0:
+            msgbox.showwarning("경고", "pdf 파일을 추가해주세요!")
+            return
+
+        if len(entry_dest_path.get()) == 0:
+            msgbox.showwarning("경고", "저장 경로를 선택하세요!")
+            return
+        return f(*args, **kwargs)
+    return wrapper
+
+
 def _open_file(path):
     if platform.system() == "Windows":
         os.startfile(path)
@@ -51,8 +75,7 @@ def _rotated_pdf(filepath, angle, dest):
     filename = os.path.basename(filepath)
     name_without_ext, ext = os.path.splitext(filename)
     cur_time = time.strftime("_%Y%m%d_%H%M%S")
-    rotated_file_name = os.path.join(
-        dest, ''.join((name_without_ext, cur_time, ext)))
+    rotated_file_name = _get_output_filename(dest, name_without_ext, ext)
 
     with open(filepath, 'rb') as original_file:
         pdfReader = PyPDF2.PdfFileReader(original_file, strict=False)
@@ -66,37 +89,64 @@ def _rotated_pdf(filepath, angle, dest):
             pdfWriter.write(result_file)
 
 
-def _rotate_pdf_files(angle, dest):
-    pdf_files = list_file.get(0, tk.END)
-    try:
-        for idx, pdf_file in enumerate(pdf_files):
-            _rotated_pdf(pdf_file, angle, dest)
-            progress = (idx + 1) / len(pdf_files) * 100
-            p_var.set(progress)
-            progress_bar.update()
-    except Exception as e:
-        msgbox.showerror("오류", e)
-        p_var.set(0)
+@handle_exception
+def _rotate_pdf_files(pdf_files, angle, dest):
+    p_var.set(0)
+    progress_bar.update()
+    for idx, pdf_file in enumerate(pdf_files):
+        _rotated_pdf(pdf_file, angle, dest)
+        progress = (idx + 1) / len(pdf_files) * 100
+        p_var.set(progress)
         progress_bar.update()
-    else:
-        msgbox.showinfo("알림", "작업이 완료되었습니다!")
-        if chkvar_open_result.get() == 1:
-            _open_file(dest)
+    
+    msgbox.showinfo("알림", "작업이 완료되었습니다!")
+    if chkvar_open_result.get() == 1:
+        _open_file(dest)
 
 
+@handle_exception
+def _merge_pdf_files(pdf_files, dest):
+    p_var.set(0)
+    progress_bar.update()
+    merger = PyPDF2.PdfFileMerger()
+    for idx, pdf_file in enumerate(pdf_files):
+        with open(pdf_file, 'rb') as f:
+            merger.append(PyPDF2.PdfFileReader(f, strict=False))
+        progress = (idx + 1) / len(pdf_files) * 100
+        p_var.set(progress)
+        progress_bar.update()
+    merged_pdf_file = _get_output_filename(dest, "merged")
+    merger.write(merged_pdf_file)
+
+    msgbox.showinfo("알림", "작업이 완료되었습니다!")
+    if chkvar_open_result.get() == 1:
+        _open_file(dest)
+
+
+def _get_output_filename(dest, name_without_ext, ext=".pdf"):
+    cur_time = time.strftime("_%Y%m%d_%H%M%S")
+    filename = os.path.join(dest, ''.join((name_without_ext, cur_time, ext)))
+    return filename
+
+
+@handle_validation
 def rotate_file():
     """rotate"""
-    if list_file.size() == 0:
-        msgbox.showwarning("경고", "pdf 파일을 추가해주세요!")
-        return
-
-    if len(entry_dest_path.get()) == 0:
-        msgbox.showwarning("경고", "저장 경로를 선택하세요!")
-        return
-
     angle = cmb_rotate.get()
     dest = entry_dest_path.get()
-    _rotate_pdf_files(angle, dest)
+    pdf_files = list_file.get(0, tk.END)
+    _rotate_pdf_files(pdf_files, angle, dest)
+
+
+@handle_validation
+def merge_file():
+    """merge pdf file"""
+    if list_file.size() < 2:
+        msgbox.showwarning("경고", "pdf 파일을 2개 이상 추가해주세요!")
+        return
+    dest = entry_dest_path.get()
+    pdf_files = list_file.get(0, tk.END)
+    _merge_pdf_files(pdf_files, dest)
 
 
 root = tk.Tk()
@@ -168,9 +218,13 @@ progress_bar.pack(fill="x", padx=5, pady=5)
 frame_run = tk.Frame(root)
 frame_run.pack(fill="x", padx=5, pady=5)
 
-btn_start = tk.Button(frame_run, padx=5, pady=5,
+btn_start_rotate = tk.Button(frame_run, padx=5, pady=5,
                       text="회전", width=8, command=rotate_file)
-btn_start.pack(padx=5, pady=5)
+btn_start_rotate.pack(side="left", padx=5, pady=5)
+
+btn_start_merge = tk.Button(frame_run, padx=5, pady=5,
+                      text="합치기", width=8, command=merge_file)
+btn_start_merge.pack(side="left", padx=5, pady=5)
 
 # root.resizable(False, False)
 root.mainloop()
