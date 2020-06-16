@@ -55,7 +55,7 @@ def _rotated_pdf(filepath, angle, dest):
         dest, ''.join((name_without_ext, cur_time, ext)))
 
     with open(filepath, 'rb') as original_file:
-        pdfReader = PyPDF2.PdfFileReader(original_file)
+        pdfReader = PyPDF2.PdfFileReader(original_file, strict=False)
         pdfWriter = PyPDF2.PdfFileWriter()
         page_length = pdfReader.getNumPages()
         for i in range(pdfReader.getNumPages()):
