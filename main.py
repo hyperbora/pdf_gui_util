@@ -193,18 +193,21 @@ frame_option = tk.LabelFrame(root, text="옵션")
 frame_option.pack(fill="both", padx=5, pady=5, ipady=5)
 
 lbl_rotate = tk.Label(frame_option, text="회전", width=8)
-lbl_rotate.pack(side="left", padx=5, pady=5)
+# lbl_rotate.pack(side="left", padx=5, pady=5)
+lbl_rotate.grid(row=0, column=0, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
 
 opt_rotate = ("90", "180", "270")
 cmb_rotate = ttk.Combobox(
     frame_option, state="readonly", values=opt_rotate, width=5)
 cmb_rotate.current(1)
-cmb_rotate.pack(side="left", padx=5, pady=5)
+# cmb_rotate.pack(side="left", padx=5, pady=5)
+cmb_rotate.grid(row=0, column=1, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
 
 chkvar_open_result = tk.IntVar(value=1)
 cb_open_result = tk.Checkbutton(
     frame_option, text="완료 후 폴더 열기", variable=chkvar_open_result)
-cb_open_result.pack(side="left", padx=5, pady=5)
+# cb_open_result.pack(side="left", padx=5, pady=5)
+cb_open_result.grid(row=1, column=0, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
 
 # 진행 상황
 frame_progress = tk.LabelFrame(root, text="진행상황")
