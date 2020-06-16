@@ -76,6 +76,8 @@ def _rotate_pdf_files(angle, dest):
             progress_bar.update()
     except Exception as e:
         msgbox.showerror("오류", e)
+        p_var.set(0)
+        progress_bar.update()
     else:
         msgbox.showinfo("알림", "작업이 완료되었습니다!")
         if chkvar_open_result.get() == 1:
