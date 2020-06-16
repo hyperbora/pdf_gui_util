@@ -48,7 +48,8 @@ def toggle_enrty_password():
         entry_password_confirm.configure(state='normal')
 
 
-def handle_exception(f):
+def decorator_exception(f):
+    """exception wrapper"""
     def wrapper(*args, **kwargs):
         try:
             return f(*args, **kwargs)
@@ -59,7 +60,8 @@ def handle_exception(f):
     return wrapper
 
 
-def handle_validation(f):
+def decorator_validation(f):
+    """validation wrapper"""
     def wrapper(*args, **kwargs):
         if list_file.size() == 0:
             msgbox.showwarning("경고", "pdf 파일을 추가해주세요!")
@@ -80,6 +82,31 @@ def handle_validation(f):
     return wrapper
 
 
+def decorator_success_msg(f):
+    """success msg wrapper"""
+    def wrapper(*args, **kwargs):
+        result = None
+        try:
+            result = f(*args, **kwargs)
+        except Exception as e:
+            raise e
+        else:
+            msgbox.showinfo("알림", "작업이 완료되었습니다!")
+            if chkvar_open_result.get() == 1:
+                dest = entry_dest_path.get()
+                _open_file(dest)
+            return result
+    return wrapper
+
+
+def decorator_init_progress(f):
+    def wrapper(*args, **kwargs):
+        p_var.set(0)
+        progress_bar.update()
+        return f(*args, **kwargs)
+    return wrapper
+
+
 def _open_file(path):
     if platform.system() == "Windows":
         os.startfile(path)
@@ -92,7 +119,6 @@ def _open_file(path):
 def _rotated_pdf(filepath, angle, dest):
     filename = os.path.basename(filepath)
     name_without_ext, ext = os.path.splitext(filename)
-    cur_time = time.strftime("_%Y%m%d_%H%M%S")
     rotated_file_name = _get_output_filename(dest, name_without_ext, ext)
 
     with open(filepath, 'rb') as original_file:
@@ -109,25 +135,39 @@ def _rotated_pdf(filepath, angle, dest):
             pdfWriter.write(result_file)
 
 
-@handle_exception
+def _encrypt_pdf(filepath, dest):
+    filename = os.path.basename(filepath)
+    name_without_ext, ext = os.path.splitext(filename)
+    encrypted_file_name = _get_output_filename(
+        dest, name_without_ext + '_encrypted', ext)
+
+    with open(filepath, 'rb') as original_file:
+        pdfReader = PyPDF2.PdfFileReader(original_file, strict=False)
+        pdfWriter = PyPDF2.PdfFileWriter()
+        page_length = pdfReader.getNumPages()
+        for i in range(page_length):
+            page = pdfReader.getPage(i)
+            pdfWriter.addPage(page)
+        with open(encrypted_file_name, 'wb') as result_file:
+            pdfWriter.encrypt(entry_password.get())
+            pdfWriter.write(result_file)
+
+
+@decorator_init_progress
+@decorator_exception
+@decorator_success_msg
 def _rotate_pdf_files(pdf_files, angle, dest):
-    p_var.set(0)
-    progress_bar.update()
     for idx, pdf_file in enumerate(pdf_files):
         _rotated_pdf(pdf_file, angle, dest)
         progress = (idx + 1) / len(pdf_files) * 100
         p_var.set(progress)
         progress_bar.update()
 
-    msgbox.showinfo("알림", "작업이 완료되었습니다!")
-    if chkvar_open_result.get() == 1:
-        _open_file(dest)
 
-
-@handle_exception
+@decorator_init_progress
+@decorator_exception
+@decorator_success_msg
 def _merge_pdf_files(pdf_files, dest):
-    p_var.set(0)
-    progress_bar.update()
     merger = PyPDF2.PdfFileMerger()
     try:
         for idx, pdf_file in enumerate(pdf_files):
@@ -155,9 +195,16 @@ def _merge_pdf_files(pdf_files, dest):
         if merger is not None:
             merger.close()
 
-    msgbox.showinfo("알림", "작업이 완료되었습니다!")
-    if chkvar_open_result.get() == 1:
-        _open_file(dest)
+
+@decorator_init_progress
+@decorator_exception
+@decorator_success_msg
+def _encrypt_files(pdf_files, dest):
+    for idx, pdf_file in enumerate(pdf_files):
+        _encrypt_pdf(pdf_file, dest)
+        progress = (idx + 1) / len(pdf_files) * 100
+        p_var.set(progress)
+        progress_bar.update()
 
 
 def _get_output_filename(dest, name_without_ext, ext=".pdf"):
@@ -166,7 +213,7 @@ def _get_output_filename(dest, name_without_ext, ext=".pdf"):
     return filename
 
 
-@handle_validation
+@decorator_validation
 def rotate_file():
     """rotate"""
     angle = cmb_rotate.get()
@@ -175,7 +222,7 @@ def rotate_file():
     _rotate_pdf_files(pdf_files, angle, dest)
 
 
-@handle_validation
+@decorator_validation
 def merge_file():
     """merge pdf file"""
     if list_file.size() < 2:
@@ -184,6 +231,17 @@ def merge_file():
     dest = entry_dest_path.get()
     pdf_files = list_file.get(0, tk.END)
     _merge_pdf_files(pdf_files, dest)
+
+
+@decorator_validation
+def encrypt_file():
+    """encrypt pdf file """
+    if chkvar_encrypt.get() == 0:
+        msgbox.showwarning("경고", "암호 설정 부분을 체크해 주세요!")
+        return
+    dest = entry_dest_path.get()
+    pdf_files = list_file.get(0, tk.END)
+    _encrypt_files(pdf_files, dest)
 
 
 root = tk.Tk()
@@ -279,5 +337,9 @@ btn_start_merge = tk.Button(frame_run, padx=5, pady=5,
                             text="합치기", width=8, command=merge_file)
 btn_start_merge.pack(side="left", padx=5, pady=5)
 
-# root.resizable(False, False)
+btn_start_encrypt = tk.Button(frame_run, padx=5, pady=5,
+                              text="암호걸기", width=8, command=encrypt_file)
+btn_start_encrypt.pack(side="left", padx=5, pady=5)
+
+root.resizable(False, False)
 root.mainloop()
