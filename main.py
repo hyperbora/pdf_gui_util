@@ -146,7 +146,7 @@ lbl_rotate.pack(side="left", padx=5, pady=5)
 opt_rotate = ("90", "180", "270")
 cmb_rotate = ttk.Combobox(
     frame_option, state="readonly", values=opt_rotate, width=5)
-cmb_rotate.current(0)
+cmb_rotate.current(1)
 cmb_rotate.pack(side="left", padx=5, pady=5)
 
 chkvar_open_result = tk.IntVar(value=1)
