@@ -118,7 +118,7 @@ def _rotate_pdf_files(pdf_files, angle, dest):
         progress = (idx + 1) / len(pdf_files) * 100
         p_var.set(progress)
         progress_bar.update()
-    
+
     msgbox.showinfo("알림", "작업이 완료되었습니다!")
     if chkvar_open_result.get() == 1:
         _open_file(dest)
@@ -244,17 +244,20 @@ cb_open_result = tk.Checkbutton(
 cb_open_result.grid(row=1, column=0, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
 
 chkvar_encrypt = tk.IntVar()
-cb_encrypt = tk.Checkbutton(frame_option, text="암호 설정", variable=chkvar_encrypt, command=toggle_enrty_password)
+cb_encrypt = tk.Checkbutton(frame_option, text="암호 설정",
+                            variable=chkvar_encrypt, command=toggle_enrty_password)
 cb_encrypt.grid(row=2, column=0, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
 
 entry_password = tk.Entry(frame_option, show="*", state='disabled')
 entry_password.grid(row=2, column=1, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
 
 lbl_password_confirm = tk.Label(frame_option, text="암호 확인", width=8)
-lbl_password_confirm.grid(row=2, column=2, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
+lbl_password_confirm.grid(
+    row=2, column=2, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
 
 entry_password_confirm = tk.Entry(frame_option, show="*", state='disabled')
-entry_password_confirm.grid(row=2, column=3, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
+entry_password_confirm.grid(
+    row=2, column=3, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
 
 # 진행 상황
 frame_progress = tk.LabelFrame(root, text="진행상황")
@@ -269,11 +272,11 @@ frame_run = tk.Frame(root)
 frame_run.pack(fill="x", padx=5, pady=5)
 
 btn_start_rotate = tk.Button(frame_run, padx=5, pady=5,
-                      text="회전", width=8, command=rotate_file)
+                             text="회전", width=8, command=rotate_file)
 btn_start_rotate.pack(side="left", padx=5, pady=5)
 
 btn_start_merge = tk.Button(frame_run, padx=5, pady=5,
-                      text="합치기", width=8, command=merge_file)
+                            text="합치기", width=8, command=merge_file)
 btn_start_merge.pack(side="left", padx=5, pady=5)
 
 # root.resizable(False, False)
