@@ -38,6 +38,16 @@ def browse_dest_path():
     entry_dest_path.configure(state='disabled')
 
 
+def toggle_enrty_password():
+    """toggle password entries"""
+    if chkvar_encrypt.get() == 0:
+        entry_password.configure(state='disabled')
+        entry_password_confirm.configure(state='disabled')
+    else:
+        entry_password.configure(state='normal')
+        entry_password_confirm.configure(state='normal')
+
+
 def handle_exception(f):
     def wrapper(*args, **kwargs):
         try:
@@ -58,6 +68,14 @@ def handle_validation(f):
         if len(entry_dest_path.get()) == 0:
             msgbox.showwarning("경고", "저장 경로를 선택하세요!")
             return
+
+        if chkvar_encrypt.get() == 1:
+            if not entry_password.get() or not entry_password_confirm.get():
+                msgbox.showwarning("경고", "암호를 입력해주세요.")
+                return
+            if entry_password.get() != entry_password_confirm.get():
+                msgbox.showwarning("경고", "암호가 일치하지 않습니다.")
+                return
         return f(*args, **kwargs)
     return wrapper
 
@@ -86,6 +104,8 @@ def _rotated_pdf(filepath, angle, dest):
             page.rotateClockwise(int(angle))
             pdfWriter.addPage(page)
         with open(rotated_file_name, 'wb') as result_file:
+            if chkvar_encrypt.get() == 1:
+                pdfWriter.encrypt(entry_password.get())
             pdfWriter.write(result_file)
 
 
@@ -109,14 +129,31 @@ def _merge_pdf_files(pdf_files, dest):
     p_var.set(0)
     progress_bar.update()
     merger = PyPDF2.PdfFileMerger()
-    for idx, pdf_file in enumerate(pdf_files):
-        with open(pdf_file, 'rb') as f:
-            merger.append(PyPDF2.PdfFileReader(f, strict=False))
-        progress = (idx + 1) / len(pdf_files) * 100
-        p_var.set(progress)
-        progress_bar.update()
-    merged_pdf_file = _get_output_filename(dest, "merged")
-    merger.write(merged_pdf_file)
+    try:
+        for idx, pdf_file in enumerate(pdf_files):
+            with open(pdf_file, 'rb') as f:
+                merger.append(PyPDF2.PdfFileReader(f, strict=False))
+            progress = (idx + 1) / len(pdf_files) * 100
+            p_var.set(progress)
+            progress_bar.update()
+        merged_pdf_filename = _get_output_filename(dest, "merged")
+        merger.write(merged_pdf_filename)
+        if chkvar_encrypt.get() == 1:
+            encrypted_pdf = PyPDF2.PdfFileWriter()
+            encrypt_pdf_filename = _get_output_filename(dest, "encrypt")
+            with open(merged_pdf_filename, 'rb') as f:
+                merged_pdf = PyPDF2.PdfFileReader(f)
+                for i in range(merged_pdf.getNumPages()):
+                    encrypted_pdf.addPage(merged_pdf.getPage(i))
+                with open(encrypt_pdf_filename, 'wb') as f:
+                    encrypted_pdf.encrypt(entry_password.get())
+                    encrypted_pdf.write(f)
+            os.remove(merged_pdf_filename)
+            os.rename(encrypt_pdf_filename, merged_pdf_filename)
+
+    finally:
+        if merger is not None:
+            merger.close()
 
     msgbox.showinfo("알림", "작업이 완료되었습니다!")
     if chkvar_open_result.get() == 1:
@@ -193,21 +230,31 @@ frame_option = tk.LabelFrame(root, text="옵션")
 frame_option.pack(fill="both", padx=5, pady=5, ipady=5)
 
 lbl_rotate = tk.Label(frame_option, text="회전", width=8)
-# lbl_rotate.pack(side="left", padx=5, pady=5)
 lbl_rotate.grid(row=0, column=0, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
 
 opt_rotate = ("90", "180", "270")
 cmb_rotate = ttk.Combobox(
     frame_option, state="readonly", values=opt_rotate, width=5)
 cmb_rotate.current(1)
-# cmb_rotate.pack(side="left", padx=5, pady=5)
 cmb_rotate.grid(row=0, column=1, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
 
 chkvar_open_result = tk.IntVar(value=1)
 cb_open_result = tk.Checkbutton(
     frame_option, text="완료 후 폴더 열기", variable=chkvar_open_result)
-# cb_open_result.pack(side="left", padx=5, pady=5)
 cb_open_result.grid(row=1, column=0, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
+
+chkvar_encrypt = tk.IntVar()
+cb_encrypt = tk.Checkbutton(frame_option, text="암호 설정", variable=chkvar_encrypt, command=toggle_enrty_password)
+cb_encrypt.grid(row=2, column=0, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
+
+entry_password = tk.Entry(frame_option, show="*", state='disabled')
+entry_password.grid(row=2, column=1, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
+
+lbl_password_confirm = tk.Label(frame_option, text="암호 확인", width=8)
+lbl_password_confirm.grid(row=2, column=2, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
+
+entry_password_confirm = tk.Entry(frame_option, show="*", state='disabled')
+entry_password_confirm.grid(row=2, column=3, sticky=tk.N+tk.W+tk.S, padx=3, pady=3)
 
 # 진행 상황
 frame_progress = tk.LabelFrame(root, text="진행상황")
