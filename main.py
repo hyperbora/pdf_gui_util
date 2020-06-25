@@ -7,6 +7,7 @@ import os
 import time
 import subprocess
 import platform
+import tkinter.simpledialog
 
 
 def add_file():
@@ -53,6 +54,10 @@ def decorator_exception(f):
     def wrapper(*args, **kwargs):
         try:
             return f(*args, **kwargs)
+        except PyPDF2.utils.PdfReadError as e:
+            msgbox.showerror("오류", "PDF 암호가 일치하지 않습니다. 암호를 확인해 주세요!")
+            p_var.set(0)
+            progress_bar.update()
         except Exception as e:
             msgbox.showerror("오류", e)
             p_var.set(0)
@@ -153,6 +158,25 @@ def _encrypt_pdf(filepath, dest):
             pdfWriter.write(result_file)
 
 
+def _decrypt_pdf(filepath, dest, password):
+    filename = os.path.basename(filepath)
+    name_without_ext, ext = os.path.splitext(filename)
+    decrypted_file_name = _get_output_filename(
+        dest, name_without_ext + '_decrypted', ext)
+    
+    with open(filepath, 'rb') as original_file:
+        pdfReader = PyPDF2.PdfFileReader(original_file, strict=False)
+        if pdfReader.isEncrypted:
+            pdfReader.decrypt(password)
+        pdfWriter = PyPDF2.PdfFileWriter()
+        page_length = pdfReader.getNumPages()
+        for i in range(page_length):
+            page = pdfReader.getPage(i)
+            pdfWriter.addPage(page)
+        with open(decrypted_file_name, 'wb') as result_file:
+            pdfWriter.write(result_file)
+
+
 @decorator_init_progress
 @decorator_exception
 @decorator_success_msg
@@ -207,6 +231,17 @@ def _encrypt_files(pdf_files, dest):
         progress_bar.update()
 
 
+@decorator_init_progress
+@decorator_exception
+@decorator_success_msg
+def _decrypt_files(pdf_files, dest, password):
+    for idx, pdf_file in enumerate(pdf_files):
+        _decrypt_pdf(pdf_file, dest, password)
+        progress = (idx + 1) / len(pdf_files) * 100
+        p_var.set(progress)
+        progress_bar.update()
+
+
 def _get_output_filename(dest, name_without_ext, ext=".pdf"):
     cur_time = time.strftime("_%Y%m%d_%H%M%S")
     filename = os.path.join(dest, ''.join((name_without_ext, cur_time, ext)))
@@ -242,6 +277,19 @@ def encrypt_file():
     dest = entry_dest_path.get()
     pdf_files = list_file.get(0, tk.END)
     _encrypt_files(pdf_files, dest)
+
+
+@decorator_validation
+def decrypt_file():
+    """decrypt pdf file """
+    password = tkinter.simpledialog.askstring("PDF 암호", "암호 :", show='*')
+    if password:
+        dest = entry_dest_path.get()
+        pdf_files = list_file.get(0, tk.END)
+        _decrypt_files(pdf_files, dest, password)
+    else:
+        msgbox.showwarning("경고", "팝업창에서 암호를 입력해 주세요!")
+        return
 
 
 root = tk.Tk()
@@ -340,6 +388,10 @@ btn_start_merge.pack(side="left", padx=5, pady=5)
 btn_start_encrypt = tk.Button(frame_run, padx=5, pady=5,
                               text="암호걸기", width=8, command=encrypt_file)
 btn_start_encrypt.pack(side="left", padx=5, pady=5)
+
+btn_start_decrypt = tk.Button(frame_run, padx=5, pady=5,
+                              text="암호풀기", width=8, command=decrypt_file)
+btn_start_decrypt.pack(side="left", padx=5, pady=5)
 
 root.resizable(False, False)
 root.mainloop()
